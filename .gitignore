@@ -50,3 +50,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+.idea
+.vscode
+
+CMakeLists.txt
+build
+cmake-build-debug
+main
+tempCodeRunnerFile.c
