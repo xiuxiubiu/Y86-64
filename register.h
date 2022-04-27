@@ -1,8 +1,6 @@
 #ifndef _Y86_64_REGISTER_H  
 #define _Y86_64_REGISTER_H  
 
-#include "init.h"
-
 #define RRAX  0x0    // %rax寄存器  
 #define RRCX  0x1    // %rcx寄存器  
 #define RRDX  0x2    // %rdx寄存器  

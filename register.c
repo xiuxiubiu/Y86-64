@@ -1,5 +1,4 @@
 #include "register.h"
-#include "init.h"
 
 // 寄存器存储
 static unsigned long regstores[MAXREGID + 1];
