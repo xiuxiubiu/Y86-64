@@ -1,4 +1,3 @@
-#include "cpu.h"
 #include "seq.h"
 #include "register.h"
 
