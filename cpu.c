@@ -26,7 +26,15 @@ enum STAT {
 int main() {
 
     unsigned char *pc = malloc(sizeof(char) * 2);
-    regfile_write_E(PC, (unsigned long)pc);
+
+    struct rfop op = { 
+        .srcA = RNONE,
+        .srcB = RNONE,
+        .dstE = PC,
+        .valE = (unsigned long)pc,
+        .dstM = RNONE,
+    };
+    regfile_operate(&op);
 
     *pc = 0x20;
     *(pc+1) = 0x45;

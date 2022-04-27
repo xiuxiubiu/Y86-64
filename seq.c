@@ -8,11 +8,14 @@ int fetch(struct instr_data *idptr) {
 
     // 获取PC寄存器内的指令地址
     unsigned char *pc;
-    unsigned long pc_val;
-    if (regfile_read_A(PC, &pc_val) != 0) {
-        return -1;
-    }
-    pc = (unsigned char *)pc_val;
+    struct rfop readpc = {
+        .srcA = PC,
+        .srcB = RNONE,
+        .dstE = RNONE,
+        .dstM = RNONE,
+    };
+    regfile_operate(&readpc);
+    pc = (unsigned char *)readpc.valA;
 
     // PC作为指令的第一个字节的地址
     unsigned char split = *pc;
@@ -65,5 +68,10 @@ int fetch(struct instr_data *idptr) {
     // 产生的valP信号为：p + 1 + r + w*i
     idptr->valP = pc + 1 + idptr->need_regids + idptr->need_valC * sizeof(unsigned long);
 
+    return 0;
+}
+
+// 译码阶段
+int decode(struct instr_data *idptr) {
     return 0;
 }

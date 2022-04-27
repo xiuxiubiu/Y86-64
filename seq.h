@@ -32,4 +32,7 @@ struct instr_data {
 // 取指阶段
 int fetch(struct instr_data *idptr);
 
+// 译码阶段
+int decode(struct instr_data *idptr);
+
 #endif

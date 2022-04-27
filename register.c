@@ -3,30 +3,22 @@
 // 寄存器存储
 static unsigned long regstores[MAXREGID + 1];
 
-// 寄存器文件读端口A
-int regfile_read_A(unsigned char regid, unsigned long *valA) {
-    if (regid > MAXREGID)
-        return -1;
-    *valA = regstores[regid];
-    return 0;
+// 寄存器文件操作
+void regfile_operate(struct rfop *op) {
+
+    // 读端口A
+    if (op->srcA != RNONE)
+        op->valA = regstores[op->srcA];
+
+    // 读端口B
+    if (op->srcB != RNONE)
+        op->valB = regstores[op->srcB];
+
+    // 写端口E
+    if (op->dstE != RNONE)
+        regstores[op->dstE] = op->valE;
+
+    // 写端口M
+    if (op->dstM != RNONE)
+        regstores[op->dstM] = op->valM;
 }
-
-// 寄存器文件读端口B
-int regfile_read_B(unsigned char regid, unsigned long *valB) {
-    if (regid > MAXREGID)
-        return -1;
-    *valB = regstores[regid];
-    return 0;
-}
-
-// 寄存器文件写端口E
-int regfile_write_E(unsigned char regid, unsigned long valE) {
-    if (regid > MAXREGID)
-        return -1;
-    regstores[regid] = valE;
-    return 0;
-}
-
-// 寄存器文件写端口M
-void regfile_write_M(unsigned char);
-
