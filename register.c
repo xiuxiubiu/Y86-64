@@ -14,11 +14,11 @@ void regfile_operate(struct rfop *op) {
     if (op->srcB != RNONE)
         op->valB = regstores[op->srcB];
 
-    // 写端口E
-    if (op->dstE != RNONE)
-        regstores[op->dstE] = op->valE;
-
     // 写端口M
     if (op->dstM != RNONE)
         regstores[op->dstM] = op->valM;
+
+    // 写端口E
+    if (op->dstE != RNONE)
+        regstores[op->dstE] = op->valE;
 }

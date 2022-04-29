@@ -26,12 +26,24 @@ typedef enum {
 
 // 寄存器文件操作
 struct rfop {
+
+    // 寄存器ID srcA表明读端口A的源寄存器
+    // 哪个寄存器产生valA
     REGID srcA;
     unsigned long valA;
+
+    // 寄存器ID srcB表明读端口B的源寄存器
+    // 哪个寄存器产生valB
     REGID srcB;
     unsigned long valB;
+
+    // 寄存器ID dstE表明写端口E的目的寄存器 
+    // 计算出来的值valE放在这里
     REGID dstE;
     unsigned long valE;
+
+    // 寄存器ID dstM表明写端口M的目的寄存器
+    // 从内存中读出来的值valM放在这里
     REGID dstM;
     unsigned long valM;
 };

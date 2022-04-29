@@ -4,7 +4,10 @@
 #include <stdio.h>
 
 // 取指阶段
-int fetch(struct instr_data *idptr) {
+int fetch(struct seq_data *sdptr) {
+
+    // 指令数据
+    struct instr_data *idptr = sdptr->instr;
 
     // 获取PC寄存器内的指令地址
     unsigned char *pc;
@@ -72,6 +75,118 @@ int fetch(struct instr_data *idptr) {
 }
 
 // 译码阶段
-int decode(struct instr_data *idptr) {
+int decode(struct seq_data *sdptr) {
+    
+    // 指令信息
+    struct instr_data *idptr = sdptr->instr;
+
+    // 指令信息
+    struct rfop *op = sdptr->op; 
+    op->srcA = RNONE;
+    op->srcB = RNONE;
+    op->dstE = RNONE;
+    op->dstM = RNONE;
+
+    // 根据命令判断读端口A的源寄存器
+    switch (idptr->icode) {
+
+    // 需要读取命令中rA所表示的寄存器
+    case IRRMOVQ:
+    case IRMMOVQ: 
+    case IOPQ:
+    case IPUSHQ:
+        op->srcA = idptr->rA;
+        break;
+
+    // 需要读取RRSP寄存器
+    case IPOPQ:
+    case IRET:
+        op->srcA = RRSP;
+        break;
+
+    // 其余命令不需要寄存器
+    default:
+        op->srcA = RNONE;
+    }
+
+    // 根据命令判断读端口B的源寄存器
+    switch (idptr->icode) {
+    
+    // 需要读取命令中rB所表示的寄存器
+    case IRMMOVQ:
+    case IMRMOVQ:
+    case IOPQ:
+        op->srcB = idptr->rB;
+        break;
+
+    // 需要读取RRSP寄存器
+    case ICALL:
+    case IRET:
+    case IPUSHQ:
+    case IPOPQ:
+        op->srcB = idptr->rB;
+        break;
+
+    // 其余命令不需要寄存器    
+    default:
+        op->srcB = RNONE;    
+    }
+
+    // 从寄存器读数据
+    regfile_operate(op);
+
+    // 根据命令判断写端口E的目的寄存器
+    switch (idptr->icode) {
+
+    // 需要写rB寄存器
+    case IRRMOVQ:
+    case IIRMOVQ:
+    case IOPQ:
+        op->dstE = idptr->rB;
+
+    // 需要写RRSP寄存器
+    case ICALL:
+    case IPUSHQ:
+    case IPOPQ:
+        op->dstE = RRSP;
+
+    // 不需要写寄存器    
+    default:
+        op->dstE = RNONE;
+    }
+
+    // 根据命令判断写端口E的目的寄存器
+    switch (idptr->icode) {
+
+    // 需要写rB寄存器
+    case IRRMOVQ:
+    case IIRMOVQ:
+    case IOPQ:
+        op->dstE = idptr->rB;
+
+    // 需要写RRSP寄存器
+    case ICALL:
+    case IPUSHQ:
+    case IPOPQ:
+        op->dstE = RRSP;
+
+    // 不需要写寄存器    
+    default:
+        op->dstE = RNONE;
+    }
+
+    // 根据命令判断写端口M的目的寄存器
+    switch(idptr->icode) {
+
+    // 内存数据写rA寄存器
+    case IMRMOVQ:
+    case IPOPQ:
+        op->dstM = idptr->rA;
+    
+    // 不需要写寄存器
+    default:
+        op->dstM = RNONE;
+    }
+
     return 0;
 }

@@ -26,6 +26,8 @@ enum STAT {
 int main() {
 
     unsigned char *pc = malloc(sizeof(char) * 2);
+    *pc = 0x20;
+    *(pc+1) = 0x45;
 
     struct rfop op = { 
         .srcA = RNONE,
@@ -36,8 +38,18 @@ int main() {
     };
     regfile_operate(&op);
 
-    *pc = 0x20;
-    *(pc+1) = 0x45;
+
+    struct rfop rsp_op = {
+        .srcA = RNONE,
+        .srcB = RNONE,
+        .dstE = RRSP,
+        .valE = (unsigned long)2222,
+        .dstM = RNONE,
+    };
+    regfile_operate(&rsp_op);
+
+
+    struct seq_data *sdptr = malloc(sizeof(struct seq_data));
 
     struct instr_data data = {
         .icode = 0x0,
@@ -50,9 +62,10 @@ int main() {
         .valC = 0x0,
         .valP = 0x0,
     };
+    sdptr->instr = &data;
 
     int errcode;
-    if ((errcode = fetch(&data)) != 0)
+    if ((errcode = fetch(sdptr)) != 0)
         printf("error: fetch error [%d]\n", errcode);
 
     printf(
@@ -60,6 +73,9 @@ int main() {
         data.icode, data.ifun, data.instr_valid, data.need_regids, data.need_valC, data.rA, data.rB, data.valP
     );
 
+
+    sdptr->op = malloc(sizeof(struct rfop));
+    decode(sdptr);
 
     return 0;
 }
