@@ -1,7 +1,4 @@
 #include "seq.h"
-#include "register.h"
-
-#include <stdio.h>
 
 // 取指阶段
 int fetch(struct seq_data *sdptr) {
@@ -124,7 +121,7 @@ int decode(struct seq_data *sdptr) {
     case IRET:
     case IPUSHQ:
     case IPOPQ:
-        op->srcB = idptr->rB;
+        op->srcB = RRSP;
         break;
 
     // 其余命令不需要寄存器    
@@ -187,6 +184,74 @@ int decode(struct seq_data *sdptr) {
     default:
         op->dstM = RNONE;
     }
+
+    return 0;
+}
+
+// 执行阶段
+int execute(struct seq_data *sdptr){
+
+    IFUN ifun;
+    long aluA, aluB;
+
+    // 根据指令判断aluA的值
+    switch(sdptr->instr->icode) {
+
+    // aluA为valA的指令
+    case IRRMOVQ:
+    case IOPQ:
+        aluA = sdptr->op->valA;
+
+    // aluA为valC的指令
+    case IIRMOVQ:
+    case IRMMOVQ:
+    case IMRMOVQ:
+        aluA = sdptr->instr->valC;
+
+    // aluA为-8的指令
+    case ICALL:
+    case IPUSHQ:
+        aluA = -8;
+    
+    // aluA为+8的指令
+    case IRET:
+    case IPOPQ:
+        aluA = 8;
+
+    // 其余指令不需要ALU计算
+    default:
+        return 0;
+    }
+
+    // 根据指令判断aluB的值
+    switch (sdptr->instr->icode) {
+
+    // aluB为valB的指令 
+    case IRMMOVQ:
+    case IMRMOVQ:
+    case IOPQ:
+    case ICALL:
+    case IRET:
+    case IPUSHQ:
+    case IPOPQ:
+        aluB = sdptr->op->valB;
+
+    // aluB为0的指令
+    case IRRMOVQ:
+    case IIRMOVQ:
+        aluB = 0;
+    
+    // 其余指令不需要ALU
+    default:
+        return 0;
+    }
+
+    // 计算valE
+    calculate(sdptr->alu);
+
+    // 整数操作设置条件码
+    if (sdptr->instr->icode == IOPQ)
+        sdptr->cc = sdptr->alu->cc;
 
     return 0;
 }

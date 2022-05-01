@@ -1,34 +1,31 @@
 #ifndef _Y86_64_ALU_H
 #define _Y86_64_ALU_H
 
-// ALU输入参数
-struct alu_input {
+#include "instruction.h"
+#include "stat.h"
 
-    // 具体操作
-    unsigned char ifun;
-
-    // 第一个输入数字
-    long aluA;
-
-    // 第二个输入数字
-    // subq为valB - valA
-    // 即subq valA, valB = valB - valA
-    long aluB;
-};
-
-// ALU计算产生的数据
+// alu操作数据
 struct alu_data {
-
-    // 输出数据
+    IFUN ifun;
+    long aluA;
+    long aluB;
     long valE;
-
-    // CC条件码
-    unsigned char OF : 1;
-    unsigned char ZF : 1;
-    unsigned char SF : 1;
+    struct CC *cc;
 };
 
 // alu执行操作
-int calculate(struct seq_data *sdptr);
+int calculate(struct alu_data *adptr);
+
+// addq运算
+static long addq(long aluA, long aluB, struct CC *cc);
+
+// subq运算
+static long subq(long aluA, long aluB, struct CC *cc);
+
+// andq运算
+static long andq(long aluA, long aluB, struct CC *cc);
+
+// xorq运算
+static long xorq(long aluA, long aluB, struct CC *cc);
 
 #endif

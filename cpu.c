@@ -64,6 +64,12 @@ int main() {
     };
     sdptr->instr = &data;
 
+    sdptr->alu = malloc(sizeof(struct alu_data));
+    sdptr->alu->cc = malloc(sizeof(struct CC));
+
+    sdptr->cc = malloc(sizeof(struct CC));
+
+
     int errcode;
     if ((errcode = fetch(sdptr)) != 0)
         printf("error: fetch error [%d]\n", errcode);
