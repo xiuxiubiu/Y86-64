@@ -17,9 +17,6 @@ struct seq_data {
 
     // ALU计算数据
     struct alu_data *alu;
-
-    // 条件码
-    struct CC *cc;
 };
 
 // 取指阶段

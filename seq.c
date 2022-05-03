@@ -1,4 +1,8 @@
 #include "seq.h"
+#include "stat.h"
+
+// 上次执行的
+static struct CC cc;
 
 // 取指阶段
 int fetch(struct seq_data *sdptr) {
@@ -100,10 +104,6 @@ int decode(struct seq_data *sdptr) {
     case IRET:
         op->srcA = RRSP;
         break;
-
-    // 其余命令不需要寄存器
-    default:
-        op->srcA = RNONE;
     }
 
     // 根据命令判断读端口B的源寄存器
@@ -122,11 +122,7 @@ int decode(struct seq_data *sdptr) {
     case IPUSHQ:
     case IPOPQ:
         op->srcB = RRSP;
-        break;
-
-    // 其余命令不需要寄存器    
-    default:
-        op->srcB = RNONE;    
+        break;  
     }
 
     // 从寄存器读数据
@@ -135,41 +131,26 @@ int decode(struct seq_data *sdptr) {
     // 根据命令判断写端口E的目的寄存器
     switch (idptr->icode) {
 
-    // 需要写rB寄存器
+    // 条件传输命令
     case IRRMOVQ:
+        
+        // cnd信号为1才写rB寄存器
+        // 否则不写任何寄存器
+        if (cnd(idptr->ifun, &cc) == 0)
+            break;
+            
+    // 需要写rB寄存器
     case IIRMOVQ:
     case IOPQ:
         op->dstE = idptr->rB;
+        break;
 
     // 需要写RRSP寄存器
     case ICALL:
     case IPUSHQ:
     case IPOPQ:
         op->dstE = RRSP;
-
-    // 不需要写寄存器    
-    default:
-        op->dstE = RNONE;
-    }
-
-    // 根据命令判断写端口E的目的寄存器
-    switch (idptr->icode) {
-
-    // 需要写rB寄存器
-    case IRRMOVQ:
-    case IIRMOVQ:
-    case IOPQ:
-        op->dstE = idptr->rB;
-
-    // 需要写RRSP寄存器
-    case ICALL:
-    case IPUSHQ:
-    case IPOPQ:
-        op->dstE = RRSP;
-
-    // 不需要写寄存器    
-    default:
-        op->dstE = RNONE;
+         break;
     }
 
     // 根据命令判断写端口M的目的寄存器
@@ -179,10 +160,7 @@ int decode(struct seq_data *sdptr) {
     case IMRMOVQ:
     case IPOPQ:
         op->dstM = idptr->rA;
-    
-    // 不需要写寄存器
-    default:
-        op->dstM = RNONE;
+        break;
     }
 
     return 0;
@@ -251,7 +229,7 @@ int execute(struct seq_data *sdptr){
 
     // 整数操作设置条件码
     if (sdptr->instr->icode == IOPQ)
-        sdptr->cc = sdptr->alu->cc;
+        cc = *sdptr->alu->cc;
 
     return 0;
 }

@@ -14,14 +14,19 @@
 #define IPUSHQ  0xA     // pushq指令的代码
 #define IPOPQ   0xB     // popq指令的代码
 
-#define FNONE   0x0     // 默认功能码
-
 // 整数操作指令功能码
 typedef enum {
-    FADDQ = 0x0,
-    FSUBQ,      
-    FANDQ,
-    FXORQ,
+    FNONE = 0x0,     // 默认功能码
+    FADDQ = 0x0,     // 整数相加功能码
+    FSUBQ = 0x1,     // 整数相减功能码
+    FANDQ = 0x2,     // 整数按位与功能码
+    FXORQ = 0x3,     // 整数异或功能码
+    FCLE  = 0x1,     // 小于等于
+    FCL   = 0x2,     // 小于
+    FCE   = 0x3,     // 等于
+    FCNE  = 0x4,     // 不等于
+    FCGE  = 0x5,     // 大于等于
+    FCG   = 0x6,     // 大于
 } IFUN;
 
 // 指令相关数据

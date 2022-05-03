@@ -4,24 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// 加法运算的功能
-const unsigned char ALUADD = 0x0;
-
-// 程序状态
-enum STAT {
-
-    // 1 正常操作状态码
-    SAOK = 0x1,
-
-    // 2 地址异常状态码
-    SADR = 0x2,
-
-    // 3 非法指令异常状态码 
-    SINS = 0x3,
-
-    // 4 halt状态码
-    SHLT = 0x4,
-};
+// 上一次指令执行的数据
+static struct seq_data *old_seq_data;
 
 int main() {
 
@@ -66,9 +50,6 @@ int main() {
 
     sdptr->alu = malloc(sizeof(struct alu_data));
     sdptr->alu->cc = malloc(sizeof(struct CC));
-
-    sdptr->cc = malloc(sizeof(struct CC));
-
 
     int errcode;
     if ((errcode = fetch(sdptr)) != 0)
