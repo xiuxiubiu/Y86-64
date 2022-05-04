@@ -61,7 +61,7 @@ int main() {
     );
 
 
-    sdptr->op = malloc(sizeof(struct rfop));
+    sdptr->rop = malloc(sizeof(struct rfop));
     decode(sdptr);
 
     return 0;

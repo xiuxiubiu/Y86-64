@@ -1,5 +1,6 @@
 #include "seq.h"
 #include "stat.h"
+#include "memory.h"
 
 // 上次执行的
 static struct CC cc;
@@ -59,18 +60,21 @@ int fetch(struct seq_data *sdptr) {
 
         // 有寄存器则读取第三个字节
         if (idptr->need_regids) {
-            idptr->valC = *((unsigned long *)(pc + 2));
+            idptr->valC = *((long *)(pc + 2));
         } else {
             
             // 没有寄存器则读取第二个字节
-            idptr->valC = *((unsigned long *)(pc + 1));
+            idptr->valC = *((long *)(pc + 1));
         }
     }
 
     // 下一条指令的地址
     // 对于PC值p、need_regids值r、need_calC值i、常数长度为w字节
     // 产生的valP信号为：p + 1 + r + w*i
-    idptr->valP = pc + 1 + idptr->need_regids + idptr->need_valC * sizeof(unsigned long);
+    idptr->valP = pc + 1 + idptr->need_regids + idptr->need_valC * sizeof(long);
+
+    // 指令地址是否越界
+    idptr->imem_error = 0;
 
     return 0;
 }
@@ -82,11 +86,11 @@ int decode(struct seq_data *sdptr) {
     struct instr_data *idptr = sdptr->instr;
 
     // 指令信息
-    struct rfop *op = sdptr->op; 
-    op->srcA = RNONE;
-    op->srcB = RNONE;
-    op->dstE = RNONE;
-    op->dstM = RNONE;
+    struct rfop *rop = sdptr->rop; 
+    rop->srcA = RNONE;
+    rop->srcB = RNONE;
+    rop->dstE = RNONE;
+    rop->dstM = RNONE;
 
     // 根据命令判断读端口A的源寄存器
     switch (idptr->icode) {
@@ -96,13 +100,13 @@ int decode(struct seq_data *sdptr) {
     case IRMMOVQ: 
     case IOPQ:
     case IPUSHQ:
-        op->srcA = idptr->rA;
+        rop->srcA = idptr->rA;
         break;
 
     // 需要读取RRSP寄存器
     case IPOPQ:
     case IRET:
-        op->srcA = RRSP;
+        rop->srcA = RRSP;
         break;
     }
 
@@ -113,7 +117,7 @@ int decode(struct seq_data *sdptr) {
     case IRMMOVQ:
     case IMRMOVQ:
     case IOPQ:
-        op->srcB = idptr->rB;
+        rop->srcB = idptr->rB;
         break;
 
     // 需要读取RRSP寄存器
@@ -121,12 +125,12 @@ int decode(struct seq_data *sdptr) {
     case IRET:
     case IPUSHQ:
     case IPOPQ:
-        op->srcB = RRSP;
+        rop->srcB = RRSP;
         break;  
     }
 
     // 从寄存器读数据
-    regfile_operate(op);
+    regfile_operate(rop);
 
     // 根据命令判断写端口E的目的寄存器
     switch (idptr->icode) {
@@ -142,14 +146,14 @@ int decode(struct seq_data *sdptr) {
     // 需要写rB寄存器
     case IIRMOVQ:
     case IOPQ:
-        op->dstE = idptr->rB;
+        rop->dstE = idptr->rB;
         break;
 
     // 需要写RRSP寄存器
     case ICALL:
     case IPUSHQ:
     case IPOPQ:
-        op->dstE = RRSP;
+        rop->dstE = RRSP;
          break;
     }
 
@@ -159,7 +163,7 @@ int decode(struct seq_data *sdptr) {
     // 内存数据写rA寄存器
     case IMRMOVQ:
     case IPOPQ:
-        op->dstM = idptr->rA;
+        rop->dstM = idptr->rA;
         break;
     }
 
@@ -178,7 +182,7 @@ int execute(struct seq_data *sdptr){
     // aluA为valA的指令
     case IRRMOVQ:
     case IOPQ:
-        aluA = sdptr->op->valA;
+        aluA = sdptr->rop->valA;
 
     // aluA为valC的指令
     case IIRMOVQ:
@@ -212,7 +216,7 @@ int execute(struct seq_data *sdptr){
     case IRET:
     case IPUSHQ:
     case IPOPQ:
-        aluB = sdptr->op->valB;
+        aluB = sdptr->rop->valB;
 
     // aluB为0的指令
     case IRRMOVQ:
@@ -230,6 +234,101 @@ int execute(struct seq_data *sdptr){
     // 整数操作设置条件码
     if (sdptr->instr->icode == IOPQ)
         cc = *sdptr->alu->cc;
+
+    return 0;
+}
+
+// 访存阶段
+int memory(struct seq_data *sdptr) {
+
+    // 根据指令判断内存操作地址
+    switch (sdptr->instr->icode) {
+        case IRRMOVQ:
+        case IPUSHQ:
+        case ICALL:
+        case IMRMOVQ:
+            sdptr->mop.addr = (unsigned long)sdptr->alu->valE;
+            break;
+        case IOPQ:
+        case IRET:
+            sdptr->mop.addr = (unsigned long)sdptr->instr->valA;
+            break;
+        default:
+            return 0;
+    }
+    
+    // 根据命令判断内存写入数据
+    switch (sdptr->instr->icode) {
+        case IRRMOVQ:
+        case IPUSHQ:
+            sdptr->mop.data = sdptr->instr->valA;
+            break;
+        case ICALL:
+            sdptr->mop.data = (unsigned long)sdptr->instr->valP;
+            break;
+    }
+
+    // 判断命令读还是写
+    switch (sdptr->instr->icode) {
+        case IMRMOVQ:
+        case IPOPQ:
+        case IRET:
+            sdptr->mop.wr = MEM_READ;
+            break;
+        case IRMMOVQ:
+        case IPUSHQ:
+        case ICALL:
+            sdptr->mop.wr = MEM_WRITE;
+            break;
+        default:
+            return 0;
+    }
+
+    // 内存操作
+    mem_operate(&sdptr->mop);
+    
+    // 判断状态
+    sdptr->st = SAOK;   // 默认为OK状态
+    if (sdptr->instr->imem_error == 1 || sdptr->mop.dmem_error == 1)
+        sdptr->st = SADR;
+        
+    if (sdptr->instr->instr_valid == 0)
+        sdptr->st = SINS;
+
+    if (sdptr->instr->icode == IHALT)
+        sdptr->st = SHLT;
+
+    return 0;
+}
+
+// 更新PC
+int updatepc(struct seq_data *sdptr) {
+    unsigned char *new_pc;
+
+    switch (sdptr->instr->icode) {
+    case ICALL:
+        new_pc = (unsigned char *)sdptr->instr->valC;
+        break;
+    case IJXX:
+        if (cnd(sdptr->instr->ifun, &cc) == 1)
+            new_pc = (unsigned char *)sdptr->instr->valC;
+        break;
+    case IRET:
+        new_pc = (unsigned char *)sdptr->mop.valM;
+        break;
+    default:
+        new_pc = (unsigned char *)sdptr->instr->valP;
+    }
+
+    // 更新PC寄存器
+    struct rfop op = {
+        .srcA = RNONE,
+        .srcB = RNONE,
+        .dstE = RNONE,
+        .dstM = PC,
+        .valM = (unsigned long)new_pc,
+    };
+    regfile_operate(&op);
 
     return 0;
 }

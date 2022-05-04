@@ -45,7 +45,10 @@ struct instr_data {
     unsigned char need_regids : 1; 
 
     // 指令包含寄存器标志位
-    unsigned char need_valC :1; 
+    unsigned char need_valC : 1; 
+
+    // 指令是否错误
+    unsigned char imem_error;
 
     // 操作寄存器rA    
     unsigned char rA;   
@@ -63,7 +66,7 @@ struct instr_data {
     long valC;            
 
     // 下一条指令的地址（即将放进PC寄存器的指令地址）
-    unsigned char *valP;            
+    unsigned char *valP;      
 };
 
 #endif
